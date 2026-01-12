@@ -2,15 +2,38 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Youtube, Music, Headphones, AtSign, Crown, Play } from "lucide-react";
+import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Home() {
   const [latestVideoId, setLatestVideoId] = useState<string | null>(null);
   const [latestVideoTitle, setLatestVideoTitle] = useState<string | null>(null);
   const [subscriberCount, setSubscriberCount] = useState<string | null>(null);
+  const [hearts, setHearts] = useState<{ id: number; x: number }[]>([]);
+
+  // 點擊加油的動畫邏輯
+  const addHeart = () => {
+    const newHeart = { id: Date.now(), x: Math.random() * 100 - 50 };
+    setHearts((prev) => [...prev, newHeart]);
+    // 3秒後移除，避免佔用記憶體
+    setTimeout(() => {
+      setHearts((prev) => prev.filter((h) => h.id !== newHeart.id));
+    }, 3000);
+  };
+
+  const whispers = [
+    "今天的月色，好像在哪場夢裡見過。",
+    "聽說，旋律是靈魂在說話。",
+    "有些歌，只想在沒人的深夜唱給你聽。",
+    "如果你也在這，那就太好了。",
+  ];
+
+  const [currentWhisper, setCurrentWhisper] = useState("");
 
   useEffect(() => {
+    // 隨機選一句碎碎念
+    setCurrentWhisper(whispers[Math.floor(Math.random() * whispers.length)]);
+    
     const fetchYouTubeData = async () => {
       try {
         const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
@@ -120,6 +143,58 @@ export default function Home() {
               draggable={false}
             />
             <div className="absolute inset-0 z-10 bg-transparent"></div>
+          </div>
+        </motion.div>
+
+        {/* 個人介紹 */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: 1 }}
+          className="mb-12 text-center flex flex-col gap-2 relative"
+        >
+          <p className="text-white/60 text-sm md:text-[15px] font-light tracking-[0.25em] leading-loose">
+            有些夜晚，宛若一場將醒未醒的夢。
+          </p>
+          <p className="text-white/80 text-[15px] md:text-16px font-normal tracking-[0.3em] mt-1">
+            我是 <span className="text-white">九黎月</span>，陪你度過每個漫長且靜謐的夜。
+          </p>
+
+          {/* 深夜呢喃 & 加油按鈕 */}
+          <div className="mt-8 flex flex-col items-center gap-4">
+            {currentWhisper && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/5 backdrop-blur-sm"
+              >
+                <p className="text-white/40 text-[11px] italic tracking-widest">
+                  「 {currentWhisper} 」
+                </p>
+              </motion.div>
+            )}
+            
+            <button
+              onClick={addHeart}
+              className="group relative p-3 rounded-full bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all duration-300"
+            >
+              <Heart className="w-5 h-5 text-red-400 group-hover:fill-red-400 transition-all" />
+              
+              {/* 噴發的愛心動畫 */}
+              {hearts.map((heart) => (
+                <motion.div
+                  key={heart.id}
+                  initial={{ opacity: 1, y: 0, scale: 1 }}
+                  animate={{ opacity: 0, y: -100, x: heart.x, scale: 0.5 }}
+                  transition={{ duration: 2, ease: "easeOut" }}
+                  className="absolute pointer-events-none text-red-400"
+                  style={{ left: "50%", top: "50%" }}
+                >
+                  <Heart className="w-4 h-4 fill-current" />
+                </motion.div>
+              ))}
+            </button>
+            <span className="text-white/20 text-[10px] tracking-tighter uppercase font-bold">點亮星火</span>
           </div>
         </motion.div>
 
