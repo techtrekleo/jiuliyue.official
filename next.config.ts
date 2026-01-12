@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
-  // 讓圖片在部署後也能正常顯示
+  /* 使用標準部署模式 */
   images: {
     unoptimized: true,
   },
