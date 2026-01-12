@@ -2,14 +2,41 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart, Pause } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+declare global {
+  interface Window {
+    YT?: any;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
 
 export default function Home() {
   const [latestVideoId, setLatestVideoId] = useState<string | null>(null);
   const [latestVideoTitle, setLatestVideoTitle] = useState<string | null>(null);
   const [subscriberCount, setSubscriberCount] = useState<string | null>(null);
   const [hearts, setHearts] = useState<{ id: number; x: number }[]>([]);
+
+  // --- YouTube IFrame Player (Embedded Player API) ---
+  const ytMountId = "yt-audio-player";
+  const ytPlayerRef = useRef<any>(null);
+  const ytReadyRef = useRef(false);
+  const [ytReady, setYtReady] = useState(false);
+  const [ytPlaying, setYtPlaying] = useState(false);
+  const [ytProgress, setYtProgress] = useState(0); // 0..1
+  const [ytDuration, setYtDuration] = useState(0); // seconds
+
+  const prettyTime = useMemo(() => {
+    const toMMSS = (s: number) => {
+      const ss = Math.max(0, Math.floor(s));
+      const m = Math.floor(ss / 60);
+      const r = ss % 60;
+      return `${m}:${String(r).padStart(2, "0")}`;
+    };
+    const current = ytDuration ? ytProgress * ytDuration : 0;
+    return { current: toMMSS(current), total: toMMSS(ytDuration) };
+  }, [ytDuration, ytProgress]);
 
   // 點擊加油的動畫邏輯
   const addHeart = () => {
@@ -65,6 +92,122 @@ export default function Home() {
     };
     fetchYouTubeData();
   }, []);
+
+  // Load YouTube IFrame API once (no API key needed)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.YT?.Player) {
+      ytReadyRef.current = true;
+      setYtReady(true);
+      return;
+    }
+
+    // Prevent duplicate script injection
+    const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+    if (!existing) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+    }
+
+    const prevReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      prevReady?.();
+      ytReadyRef.current = true;
+      setYtReady(true);
+    };
+  }, []);
+
+  // Create / update player when we have latestVideoId
+  useEffect(() => {
+    if (!ytReady || !latestVideoId) return;
+    if (typeof window === "undefined") return;
+
+    // Destroy old player if any
+    try {
+      ytPlayerRef.current?.destroy?.();
+    } catch {
+      // ignore
+    }
+    ytPlayerRef.current = null;
+    setYtPlaying(false);
+    setYtProgress(0);
+    setYtDuration(0);
+
+    // Ensure mount element exists
+    const el = document.getElementById(ytMountId);
+    if (!el) return;
+
+    ytPlayerRef.current = new window.YT.Player(ytMountId, {
+      height: "180",
+      width: "320",
+      videoId: latestVideoId,
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        rel: 0,
+        modestbranding: 1,
+        playsinline: 1,
+      },
+      events: {
+        onReady: () => {
+          try {
+            const d = ytPlayerRef.current?.getDuration?.();
+            if (typeof d === "number" && Number.isFinite(d)) setYtDuration(d);
+          } catch {
+            // ignore
+          }
+        },
+        onStateChange: (e: any) => {
+          // 1: playing, 2: paused, 0: ended
+          const state = e?.data;
+          if (state === 1) setYtPlaying(true);
+          if (state === 2 || state === 0) setYtPlaying(false);
+        },
+      },
+    });
+
+    return () => {
+      try {
+        ytPlayerRef.current?.destroy?.();
+      } catch {
+        // ignore
+      }
+      ytPlayerRef.current = null;
+    };
+  }, [ytReady, latestVideoId]);
+
+  // Poll progress while playing (or when player exists)
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const p = ytPlayerRef.current;
+      if (!p?.getCurrentTime || !p?.getDuration) return;
+      try {
+        const cur = p.getCurrentTime();
+        const dur = p.getDuration();
+        if (typeof dur === "number" && dur > 0) {
+          setYtDuration(dur);
+          setYtProgress(Math.min(1, Math.max(0, cur / dur)));
+        }
+      } catch {
+        // ignore
+      }
+    }, 500);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const toggleYt = () => {
+    const p = ytPlayerRef.current;
+    if (!p) return;
+    try {
+      if (ytPlaying) p.pauseVideo?.();
+      else p.playVideo?.();
+    } catch {
+      // ignore
+    }
+  };
 
   const links = [
     {
@@ -301,6 +444,49 @@ export default function Home() {
           </p>
         </motion.div>
       </main>
+
+      {/* Offscreen YouTube player mount (must NOT be display:none) */}
+      <div className="fixed top-0 -left-[10000px] w-[320px] h-[180px] opacity-0 pointer-events-none">
+        <div id={ytMountId} />
+      </div>
+
+      {/* Mini player bar (local test) */}
+      {latestVideoId && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[340px] sm:max-w-[420px]">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl px-4 py-3 shadow-2xl">
+            <div
+              className="absolute top-0 left-0 h-[2px] bg-yellow-500/50"
+              style={{ width: `${Math.round(ytProgress * 100)}%` }}
+            />
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[10px] text-yellow-500/70 font-bold uppercase tracking-tighter">
+                  Now Playing
+                </div>
+                <div className="text-white/90 text-xs font-light tracking-wide truncate">
+                  {latestVideoTitle ?? "最新作品"}
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-[10px] text-white/40 tracking-wider">
+                  <span>{prettyTime.current}</span>
+                  <span className="opacity-40">/</span>
+                  <span>{prettyTime.total}</span>
+                  {!ytReady && <span className="ml-2 opacity-60">載入播放器中…</span>}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={toggleYt}
+                className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+                title={ytPlaying ? "暫停" : "播放"}
+              >
+                {ytPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
