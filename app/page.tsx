@@ -200,9 +200,13 @@ export default function Home() {
 
         {/* 連結列表 */}
         <div className="flex flex-col gap-5 w-full max-w-[340px] sm:max-w-[420px]">
-          {latestVideoId && (
-            <motion.a
-              href={`https://www.youtube.com/watch?v=${latestVideoId}`}
+          {/* 最新作品：就算抓不到 API，也先顯示（fallback 連到頻道） */}
+          <motion.a
+              href={
+                latestVideoId
+                  ? `https://www.youtube.com/watch?v=${latestVideoId}`
+                  : "https://www.youtube.com/@Jiuliyue"
+              }
               target="_blank"
               rel="noopener noreferrer"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -218,21 +222,20 @@ export default function Home() {
                     最新作品
                   </span>
                 </div>
-                {latestVideoTitle && (
-                  <span className="text-yellow-200/60 text-[10px] sm:text-[11px] tracking-widest font-light mt-1 text-center max-w-[300px] sm:max-w-[350px] leading-relaxed">
-                    {latestVideoTitle}
-                  </span>
-                )}
-              </div>
-              <div className="absolute top-2 right-3 flex gap-1">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                <span className="text-yellow-200/60 text-[10px] sm:text-[11px] tracking-widest font-light mt-1 text-center max-w-[300px] sm:max-w-[350px] leading-relaxed">
+                  {latestVideoTitle ?? "正在抓取最新作品…"}
                 </span>
-                <span className="text-[9px] text-red-500 font-black uppercase tracking-tighter">New Release</span>
               </div>
+              {latestVideoId && (
+                <div className="absolute top-2 right-3 flex gap-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                  <span className="text-[9px] text-red-500 font-black uppercase tracking-tighter">New Release</span>
+                </div>
+              )}
             </motion.a>
-          )}
 
           {links.map((link, index) => (
             <motion.a
