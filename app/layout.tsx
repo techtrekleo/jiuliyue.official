@@ -20,6 +20,7 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: "九黎月 | Official Website",
   description: "九黎月官方網站 - 探索東方幻念音樂世界",
+  metadataBase: new URL("https://jiuliyue.zeabur.app"),
   openGraph: {
     title: "九黎月 | Official Website",
     description: "探索東方幻念音樂世界",
@@ -27,13 +28,19 @@ export const metadata: Metadata = {
     siteName: "九黎月",
     images: [
       {
-        url: "/og_source.jpg", // 這裡指向您放入 public 的圖片
+        url: "/og.jpg",
         width: 1200,
         height: 630,
       },
     ],
     locale: "zh_TW",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "九黎月 | Official Website",
+    description: "探索東方幻念音樂世界",
+    images: ["/og.jpg"],
   },
 };
 
