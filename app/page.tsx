@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { Youtube, Music, Headphones, AtSign, Crown, Play, Pause, Volume2, SkipForward } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import ReactPlayer from "react-player/youtube";
+import ReactPlayer from "react-player";
 
 export default function Home() {
   const [latestVideoId, setLatestVideoId] = useState<string | null>(null);
