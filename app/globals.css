@@ -1,8 +1,22 @@
 @import "tailwindcss";
 
+/* 本地字體設定 - 如果您有莫大字體或其他毛筆字體，請放在 app/fonts 目錄 */
+/* 當您有字體檔案時，可以取消註解以下 @font-face 規則 */
+/*
+@font-face {
+  font-family: "Moda";
+  src: url("./fonts/Moda.ttf") format("truetype"),
+       url("./fonts/Moda.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-brush: "KaiTi", "STKaiti", "BiauKai", serif;
 }
 
 @theme inline {
@@ -23,4 +37,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }
