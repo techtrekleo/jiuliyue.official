@@ -1,4 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="transparent"/>
-  <text x="50" y="75" font-family="serif" font-size="80" fill="#FF0000" text-anchor="middle" font-weight="bold">九</text>
+  <!-- 使用更具書法結構的向量路徑來呈現「九」 -->
+  <path d="M25 30 C 25 30, 75 25, 80 25 C 85 25, 80 35, 75 40 C 60 55, 40 85, 20 90 M50 20 C 50 20, 60 50, 60 70 C 60 90, 50 95, 45 90 C 40 85, 45 75, 55 70 C 70 65, 90 75, 95 85" 
+        fill="none" 
+        stroke="#FF0000" 
+        stroke-width="12" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
 </svg>
