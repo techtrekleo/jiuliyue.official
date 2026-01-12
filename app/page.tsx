@@ -2,23 +2,13 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Youtube, Music, Headphones, AtSign, Crown, Play, Pause, Volume2, SkipForward } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
-import dynamic from "next/dynamic";
-
-// 使用最通用的引用路徑，並保留 dynamic 以避免 SSR 衝突
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
+import { Youtube, Music, Headphones, AtSign, Crown, Play } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const [latestVideoId, setLatestVideoId] = useState<string | null>(null);
   const [latestVideoTitle, setLatestVideoTitle] = useState<string | null>(null);
   const [subscriberCount, setSubscriberCount] = useState<string | null>(null);
-  
-  // 播放器狀態
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isPlayerReady, setIsPlayerReady] = useState(false);
-  const [played, setPlayed] = useState(0);
-  const playerRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchYouTubeData = async () => {
@@ -53,9 +43,6 @@ export default function Home() {
     fetchYouTubeData();
   }, []);
 
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-  };
   const links = [
     {
       name: "YouTube 頻道",
@@ -94,7 +81,7 @@ export default function Home() {
   return (
     <div 
       className="relative min-h-screen w-full overflow-y-auto overflow-x-hidden bg-black pb-20 select-none"
-      onContextMenu={(e) => e.preventDefault()} // 全域禁用右鍵
+      onContextMenu={(e) => e.preventDefault()}
     >
       {/* 背景圖片 */}
       <div className="fixed inset-0 z-0">
@@ -103,12 +90,11 @@ export default function Home() {
             src="/bg_optimized.jpg"
             alt="背景"
             fill
-            className="object-cover pointer-events-none" // 禁用滑鼠事件
+            className="object-cover pointer-events-none"
             priority
             quality={90}
-            draggable={false} // 禁用拖拽
+            draggable={false}
           />
-          {/* 透明保護層 */}
           <div className="absolute inset-0 z-10 bg-transparent"></div>
         </div>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-20"></div>
@@ -133,14 +119,12 @@ export default function Home() {
               priority
               draggable={false}
             />
-            {/* Logo 透明保護層 */}
             <div className="absolute inset-0 z-10 bg-transparent"></div>
           </div>
         </motion.div>
 
-        {/* 連結列表 (Linktree Style) */}
+        {/* 連結列表 */}
         <div className="flex flex-col gap-5 w-full max-w-[340px] sm:max-w-[420px]">
-          {/* 最新影片按鈕 - 僅在抓取到資料後顯示 */}
           {latestVideoId && (
             <motion.a
               href={`https://www.youtube.com/watch?v=${latestVideoId}`}
@@ -156,7 +140,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <Play className="w-5 h-5 text-yellow-400 fill-yellow-400 animate-pulse" />
                   <span className="text-yellow-400 font-bold tracking-[0.2em] text-[15px]">
-                    聽最新的一首歌
+                    最新作品
                   </span>
                 </div>
                 {latestVideoTitle && (
@@ -188,33 +172,19 @@ export default function Home() {
               whileTap={{ scale: 0.98 }}
               className="group relative flex items-center justify-center px-8 py-5 rounded-2xl border border-white/10 overflow-hidden transition-all duration-500"
             >
-              {/* 預設背景：極簡毛玻璃 */}
               <div className="absolute inset-0 bg-white/5 backdrop-blur-md group-hover:opacity-0 transition-opacity duration-500"></div>
-              
-              {/* 懸停背景：漸層亮起 */}
               <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r ${link.color} transition-opacity duration-500`}></div>
-              
-              {/* 閃光流動效果 (僅在懸停時) */}
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
-              
-              {/* 中心內容組合：確保 icon 和文字對齊 */}
               <div className="flex items-center justify-center gap-4 relative z-10 w-full">
-                <motion.span 
-                  className="w-6 flex justify-center text-white/70 group-hover:text-white group-hover:scale-110 transition-all duration-300"
-                >
+                <motion.span className="w-6 flex justify-center text-white/70 group-hover:text-white group-hover:scale-110 transition-all duration-300">
                   {link.icon}
                 </motion.span>
                 <span className="text-white/80 group-hover:text-white font-light tracking-[0.15em] text-[15px] transition-colors duration-300">
                   {link.name}
                 </span>
               </div>
-
-              {/* 右側裝飾：絕對定位，不影響中心對齊 */}
               <div className="absolute right-6 z-10 text-white/20 group-hover:text-white/100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100">
                 <div className="w-1 h-1 rounded-full bg-white shadow-[0_0_10px_white]"></div>
               </div>
-
-              {/* 特別標註 (如會員) */}
               {link.special && (
                 <div className="absolute top-0 right-0 px-3 py-1 bg-yellow-500/10 backdrop-blur-sm text-[9px] text-yellow-200/50 font-bold tracking-widest border-b border-l border-yellow-500/20 rounded-bl-xl group-hover:bg-yellow-400 group-hover:text-black group-hover:opacity-100 transition-all duration-500">
                   {link.price && <span className="mr-2 opacity-50 group-hover:opacity-100">{link.price}</span>}
@@ -225,14 +195,13 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 頁尾微標 */}
+        {/* 頁尾 */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2 }}
-          className="mt-16 mb-32 flex flex-col items-center gap-4"
+          className="mt-16 flex flex-col items-center gap-4"
         >
-          {/* ... 頁尾內容 ... */}
           <div className="relative w-12 h-12 opacity-40 hover:opacity-100 transition-opacity duration-500">
             <Image
               src="/logo.png"
@@ -244,7 +213,6 @@ export default function Home() {
             />
             <div className="absolute inset-0 z-10 bg-transparent"></div>
           </div>
-
           {subscriberCount && (
             <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-white/50 tracking-widest uppercase">
               {subscriberCount} Subscribers
@@ -255,83 +223,6 @@ export default function Home() {
           </p>
         </motion.div>
       </main>
-
-      {/* 隱藏的播放器引擎 */}
-      {latestVideoId && (
-        <div className="fixed top-0 -left-[1000px] pointer-events-none w-1 h-1 overflow-hidden">
-          <ReactPlayer
-            ref={playerRef}
-            url={`https://www.youtube.com/watch?v=${latestVideoId}`}
-            playing={isPlaying}
-            onReady={() => setIsPlayerReady(true)}
-            onProgress={(state) => setPlayed(state.played)}
-            onError={(e) => console.error("Player Error:", e)}
-            config={{ 
-              youtube: { 
-                playerVars: { 
-                  autoplay: 0,
-                  controls: 0,
-                  modestbranding: 1
-                } 
-              } 
-            }}
-          />
-        </div>
-      )}
-
-      {/* 懸浮音樂控制面板 */}
-      {latestVideoId && (
-        <motion.div
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          transition={{ delay: 1.5, type: "spring", stiffness: 100 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[500px]"
-        >
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl p-4 shadow-2xl">
-            {/* 進度條 */}
-            <div className="absolute top-0 left-0 h-[2px] bg-yellow-500/50 transition-all duration-300" style={{ width: `${played * 100}%` }}></div>
-            
-            <div className="flex items-center justify-between gap-4">
-              {/* 歌曲資訊 */}
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-[#800000] to-black flex items-center justify-center border border-white/10 ${isPlaying ? 'animate-pulse' : ''}`}>
-                  <Music className="w-5 h-5 text-white/50" />
-                </div>
-                <div className="flex flex-col overflow-hidden text-left">
-                  <span className="text-[10px] text-yellow-500/70 font-bold uppercase tracking-tighter">Now Playing</span>
-                  <span className="text-white/90 text-xs font-light tracking-wide truncate max-w-[150px] sm:max-w-[200px]">
-                    {latestVideoTitle || "Loading..."}
-                  </span>
-                </div>
-              </div>
-
-              {/* 控制按鈕 */}
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={togglePlay}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 relative"
-                >
-                  {/* 如果還沒 Ready 但也沒在播放，顯示微小的載入感，但允許點擊 */}
-                  {!isPlayerReady && !isPlaying ? (
-                    <>
-                      <Play className="w-5 h-5 ml-0.5 opacity-40" />
-                      <div className="absolute inset-0 border-2 border-white/10 border-t-white/60 rounded-full animate-spin"></div>
-                    </>
-                  ) : (
-                    isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />
-                  )}
-                </button>
-                <div className="flex items-center gap-2 text-white/30 sm:flex hidden">
-                  <Volume2 className="w-4 h-4" />
-                  <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-white/40 w-2/3"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }
