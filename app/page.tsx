@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart, Pause } from "lucide-react";
+import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart, Pause, Shuffle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 declare global {
@@ -17,6 +17,9 @@ export default function Home() {
   const [latestVideoTitle, setLatestVideoTitle] = useState<string | null>(null);
   const [subscriberCount, setSubscriberCount] = useState<string | null>(null);
   const [hearts, setHearts] = useState<{ id: number; x: number }[]>([]);
+  const [videoPool, setVideoPool] = useState<Array<{ id: string; title: string }>>([]);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const [currentVideoTitle, setCurrentVideoTitle] = useState<string | null>(null);
 
   // --- YouTube IFrame Player (Embedded Player API) ---
   const ytMountId = "yt-audio-player";
@@ -26,6 +29,8 @@ export default function Home() {
   const [ytPlaying, setYtPlaying] = useState(false);
   const [ytProgress, setYtProgress] = useState(0); // 0..1
   const [ytDuration, setYtDuration] = useState(0); // seconds
+  const [ytPlayerReady, setYtPlayerReady] = useState(false);
+  const [ytError, setYtError] = useState<string | null>(null);
 
   const prettyTime = useMemo(() => {
     const toMMSS = (s: number) => {
@@ -63,6 +68,8 @@ export default function Home() {
     
     const fetchYouTubeData = async () => {
       try {
+        let chosenFromSearch: { id: string; title: string } | null = null;
+
         const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
         const channelId = "UCZVT570EWJ64ibL-re9CFpQ";
         if (!apiKey || apiKey.includes("你的")) return;
@@ -73,8 +80,14 @@ export default function Home() {
         );
         const videoData = await videoRes.json();
         if (videoData.items?.[0]) {
-          setLatestVideoId(videoData.items[0].id.videoId);
-          setLatestVideoTitle(videoData.items[0].snippet.title.split(" (")[0]);
+          const vid = videoData.items[0].id.videoId as string;
+          const title = (videoData.items[0].snippet.title as string).split(" (")[0];
+          setLatestVideoId(vid);
+          setLatestVideoTitle(title);
+          // 初始化播放器當前播放曲目為最新作品（若尚未設定）
+          setCurrentVideoId((prev) => prev ?? vid);
+          setCurrentVideoTitle((prev) => prev ?? title);
+          chosenFromSearch = { id: vid, title };
         }
 
         // 2. 抓取頻道統計數據 (訂閱數)
@@ -85,6 +98,46 @@ export default function Home() {
         if (channelData.items?.[0]) {
           const count = parseInt(channelData.items[0].statistics.subscriberCount);
           setSubscriberCount(count >= 1000 ? (count / 1000).toFixed(1) + "K" : count.toString());
+        }
+
+        // 3. 抓取頻道 uploads playlist，取得最近作品池（用於隨機播放）
+        const uploadsRes = await fetch(
+          `https://www.googleapis.com/youtube/v3/channels?key=${apiKey}&id=${channelId}&part=contentDetails`
+        );
+        const uploadsData = await uploadsRes.json();
+        const uploadsPlaylistId =
+          uploadsData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+
+        if (uploadsPlaylistId) {
+          const listRes = await fetch(
+            `https://www.googleapis.com/youtube/v3/playlistItems?key=${apiKey}&playlistId=${uploadsPlaylistId}&part=snippet,contentDetails&maxResults=25`
+          );
+          const listData = await listRes.json();
+          const pool: Array<{ id: string; title: string }> =
+            listData.items
+              ?.map((it: any) => ({
+                id: it?.contentDetails?.videoId as string | undefined,
+                title: (it?.snippet?.title as string | undefined)?.split(" (")[0] ?? "未命名",
+              }))
+              .filter((x: any) => !!x.id) ?? [];
+
+          // 依照 id 去重並保留第一個出現的 title
+          const seen = new Set<string>();
+          const uniq: Array<{ id: string; title: string }> = [];
+          for (const item of pool) {
+            if (seen.has(item.id)) continue;
+            seen.add(item.id);
+            uniq.push(item);
+          }
+          setVideoPool(uniq);
+
+          // 如果 search 沒抓到（或被限制/快取影響），就用 uploads 清單的第一首當作「最新作品」
+          if (!chosenFromSearch && uniq[0]) {
+            setLatestVideoId(uniq[0].id);
+            setLatestVideoTitle(uniq[0].title);
+            setCurrentVideoId((prev) => prev ?? uniq[0].id);
+            setCurrentVideoTitle((prev) => prev ?? uniq[0].title);
+          }
         }
       } catch (e) {
         console.error("YouTube API Error", e);
@@ -118,56 +171,73 @@ export default function Home() {
     };
   }, []);
 
-  // Create / update player when we have latestVideoId
+  // Create player once (do NOT recreate on every track switch)
   useEffect(() => {
-    if (!ytReady || !latestVideoId) return;
+    if (!ytReady) return;
     if (typeof window === "undefined") return;
-
-    // Destroy old player if any
-    try {
-      ytPlayerRef.current?.destroy?.();
-    } catch {
-      // ignore
-    }
-    ytPlayerRef.current = null;
-    setYtPlaying(false);
-    setYtProgress(0);
-    setYtDuration(0);
+    if (!window.YT?.Player) return;
+    const initialVideoId: string | null = currentVideoId ?? latestVideoId;
+    if (!initialVideoId) return;
 
     // Ensure mount element exists
     const el = document.getElementById(ytMountId);
     if (!el) return;
 
-    ytPlayerRef.current = new window.YT.Player(ytMountId, {
-      height: "180",
-      width: "320",
-      videoId: latestVideoId,
-      playerVars: {
-        autoplay: 0,
-        controls: 0,
-        disablekb: 1,
-        fs: 0,
-        rel: 0,
-        modestbranding: 1,
-        playsinline: 1,
-      },
-      events: {
-        onReady: () => {
-          try {
-            const d = ytPlayerRef.current?.getDuration?.();
-            if (typeof d === "number" && Number.isFinite(d)) setYtDuration(d);
-          } catch {
-            // ignore
-          }
+    // If already created, skip
+    if (ytPlayerRef.current) return;
+
+    try {
+      setYtError(null);
+      setYtPlayerReady(false);
+      ytPlayerRef.current = new window.YT.Player(ytMountId, {
+        height: "180",
+        width: "320",
+        videoId: initialVideoId,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
         },
-        onStateChange: (e: any) => {
-          // 1: playing, 2: paused, 0: ended
-          const state = e?.data;
-          if (state === 1) setYtPlaying(true);
-          if (state === 2 || state === 0) setYtPlaying(false);
+        events: {
+          onReady: () => {
+            try {
+              setYtPlayerReady(true);
+              const d = ytPlayerRef.current?.getDuration?.();
+              if (typeof d === "number" && Number.isFinite(d)) setYtDuration(d);
+            } catch {
+              // ignore
+            }
+          },
+          onStateChange: (e: any) => {
+            // 1: playing, 2: paused, 0: ended
+            const state = e?.data;
+            if (state === 1) setYtPlaying(true);
+            if (state === 2 || state === 0) setYtPlaying(false);
+          },
+          onError: (e: any) => {
+            // Don't crash the page if the player errors out (adblock, blocked iframe, etc.)
+            console.error("YT Player Error:", e);
+            const code = e?.data;
+            // 101 / 150: embedding not allowed
+            if (code === 101 || code === 150) {
+              setYtError("此影片不允許嵌入播放（YouTube 限制 101/150）。請按右邊 Shuffle 換一首。");
+            } else {
+              setYtError("播放器初始化失敗，可能被瀏覽器外掛/隱私設定擋住。");
+            }
+            setYtPlaying(false);
+          },
         },
-      },
-    });
+      });
+    } catch (e) {
+      console.error("YT Player init failed:", e);
+      setYtError("播放器初始化失敗。");
+      setYtPlaying(false);
+      return;
+    }
 
     return () => {
       try {
@@ -177,10 +247,47 @@ export default function Home() {
       }
       ytPlayerRef.current = null;
     };
-  }, [ytReady, latestVideoId]);
+  }, [ytReady, ytMountId, latestVideoId, currentVideoId]);
+
+  // Keep UI in sync when currentVideoId changes (no autoplay here; autoplay must be from user gesture)
+  useEffect(() => {
+    const p = ytPlayerRef.current;
+    if (!p || !currentVideoId) return;
+    try {
+      const currentLoaded = p.getVideoData?.()?.video_id;
+      if (currentLoaded === currentVideoId) return;
+      // cue only (no autoplay) to avoid browser gesture restrictions
+      p.cueVideoById?.(currentVideoId);
+      setYtPlaying(false);
+    } catch {
+      // ignore
+    }
+  }, [currentVideoId]);
+
+  const shufflePlay = () => {
+    if (!videoPool.length) return;
+    const current = currentVideoId;
+    const candidates = current ? videoPool.filter((x) => x.id !== current) : videoPool;
+    const next = candidates[Math.floor(Math.random() * candidates.length)];
+    if (!next?.id) return;
+    setCurrentVideoId(next.id);
+    setCurrentVideoTitle(next.title);
+    // Use user gesture to start playback immediately (avoid autoplay restrictions)
+    const p = ytPlayerRef.current;
+    if (p?.loadVideoById) {
+      try {
+        setYtError(null);
+        p.loadVideoById(next.id);
+        setYtPlaying(true);
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   // Poll progress while playing (or when player exists)
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const id = window.setInterval(() => {
       const p = ytPlayerRef.current;
       if (!p?.getCurrentTime || !p?.getDuration) return;
@@ -200,9 +307,11 @@ export default function Home() {
 
   const toggleYt = () => {
     const p = ytPlayerRef.current;
-    if (!p) return;
+    if (!p || !ytPlayerReady) return;
     try {
-      if (ytPlaying) p.pauseVideo?.();
+      const state = p.getPlayerState?.();
+      // 1 playing, 2 paused, 5 cued
+      if (state === 1) p.pauseVideo?.();
       else p.playVideo?.();
     } catch {
       // ignore
@@ -451,7 +560,7 @@ export default function Home() {
       </div>
 
       {/* Mini player bar (local test) */}
-      {latestVideoId && (
+      {(currentVideoId ?? latestVideoId) && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[340px] sm:max-w-[420px]">
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl px-4 py-3 shadow-2xl">
             <div
@@ -465,24 +574,44 @@ export default function Home() {
                   Now Playing
                 </div>
                 <div className="text-white/90 text-xs font-light tracking-wide truncate">
-                  {latestVideoTitle ?? "最新作品"}
+                  {currentVideoTitle ?? latestVideoTitle ?? "最新作品"}
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-[10px] text-white/40 tracking-wider">
                   <span>{prettyTime.current}</span>
                   <span className="opacity-40">/</span>
                   <span>{prettyTime.total}</span>
-                  {!ytReady && <span className="ml-2 opacity-60">載入播放器中…</span>}
+                  {(!ytReady || !ytPlayerReady) && (
+                    <span className="ml-2 opacity-60">載入播放器中…</span>
+                  )}
                 </div>
+                {ytError && (
+                  <div className="mt-1 text-[10px] text-red-300/80 tracking-wide">
+                    {ytError}
+                  </div>
+                )}
               </div>
 
-              <button
-                type="button"
-                onClick={toggleYt}
-                className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
-                title={ytPlaying ? "暫停" : "播放"}
-              >
-                {ytPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-              </button>
+              <div className="shrink-0 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={shufflePlay}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/80 transition-all active:scale-95"
+                  title="隨機播放"
+                >
+                  <Shuffle className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleYt}
+                  disabled={!ytPlayerReady}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-95 ${
+                    ytPlayerReady ? "bg-white/10 hover:bg-white/20 text-white" : "bg-white/5 text-white/30 cursor-not-allowed"
+                  }`}
+                  title={ytPlaying ? "暫停" : "播放"}
+                >
+                  {ytPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                </button>
+              </div>
             </div>
           </div>
         </div>
