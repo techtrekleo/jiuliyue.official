@@ -87,7 +87,7 @@ export default function Home() {
       <div className="fixed inset-0 z-0">
         <div className="relative w-full h-full">
           <Image
-            src="/大圖.png"
+            src="/bg_optimized.jpg"
             alt="背景"
             fill
             className="object-cover pointer-events-none" // 禁用滑鼠事件
@@ -112,7 +112,7 @@ export default function Home() {
         >
           <div className="relative">
             <Image
-              src="/image-removebg-preview.png"
+              src="/logo_title.png"
               alt="九黎月"
               width={600}
               height={200}
