@@ -4,7 +4,10 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { Youtube, Music, Headphones, AtSign, Crown, Play, Pause, Volume2, SkipForward } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import ReactPlayer from "react-player";
+import dynamic from "next/dynamic";
+
+// 使用最通用的引用路徑，並保留 dynamic 以避免 SSR 衝突
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
 export default function Home() {
   const [latestVideoId, setLatestVideoId] = useState<string | null>(null);
@@ -13,8 +16,9 @@ export default function Home() {
   
   // 播放器狀態
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [played, setPlayed] = useState(0);
-  const playerRef = useRef<ReactPlayer>(null);
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchYouTubeData = async () => {
@@ -48,6 +52,10 @@ export default function Home() {
     };
     fetchYouTubeData();
   }, []);
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+  };
   const links = [
     {
       name: "YouTube 頻道",
@@ -250,13 +258,23 @@ export default function Home() {
 
       {/* 隱藏的播放器引擎 */}
       {latestVideoId && (
-        <div className="hidden">
+        <div className="fixed top-0 -left-[1000px] pointer-events-none w-1 h-1 overflow-hidden">
           <ReactPlayer
             ref={playerRef}
             url={`https://www.youtube.com/watch?v=${latestVideoId}`}
             playing={isPlaying}
+            onReady={() => setIsPlayerReady(true)}
             onProgress={(state) => setPlayed(state.played)}
-            config={{ youtube: { playerVars: { origin: window.location.origin } } }}
+            onError={(e) => console.error("Player Error:", e)}
+            config={{ 
+              youtube: { 
+                playerVars: { 
+                  autoplay: 0,
+                  controls: 0,
+                  modestbranding: 1
+                } 
+              } 
+            }}
           />
         </div>
       )}
@@ -290,10 +308,18 @@ export default function Home() {
               {/* 控制按鈕 */}
               <div className="flex items-center gap-4">
                 <button 
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+                  onClick={togglePlay}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95 relative"
                 >
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                  {/* 如果還沒 Ready 但也沒在播放，顯示微小的載入感，但允許點擊 */}
+                  {!isPlayerReady && !isPlaying ? (
+                    <>
+                      <Play className="w-5 h-5 ml-0.5 opacity-40" />
+                      <div className="absolute inset-0 border-2 border-white/10 border-t-white/60 rounded-full animate-spin"></div>
+                    </>
+                  ) : (
+                    isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />
+                  )}
                 </button>
                 <div className="flex items-center gap-2 text-white/30 sm:flex hidden">
                   <Volume2 className="w-4 h-4" />
