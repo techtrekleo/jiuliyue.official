@@ -1,18 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- 小篆風格的「九」字路徑 -->
-  <path d="M50 20 
-           C 40 20, 30 25, 30 40 
-           L 30 65 
-           C 30 80, 40 85, 50 85 
-           L 65 85 
-           C 75 85, 80 80, 80 70 
-           M 30 45 
-           L 70 45 
-           C 80 45, 85 50, 85 60 
-           L 85 80" 
-        fill="none" 
+  <!-- 左撇：俐落的斜切 -->
+  <path d="M48 22 C 45 45, 38 72, 18 88" 
         stroke="#FF0000" 
-        stroke-width="10" 
-        stroke-linecap="round" 
-        stroke-linejoin="round"/>
+        stroke-width="15" 
+        fill="none" 
+        stroke-linecap="round"/>
+  <!-- 橫折彎鉤：確保右下角有一個清楚的「轉折」感，避免圓圈化 -->
+  <path d="M32 38 L 72 32 C 78 32, 78 38, 78 45 L 75 72 C 75 85, 82 88, 92 84" 
+        stroke="#FF0000" 
+        stroke-width="15" 
+        fill="none" 
+        stroke-linecap="round"/>
 </svg>
