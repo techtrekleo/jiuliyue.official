@@ -2,13 +2,19 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Youtube, Music, Headphones, AtSign, Crown, Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Youtube, Music, Headphones, AtSign, Crown, Play, Pause, Volume2, SkipForward } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import ReactPlayer from "react-player/youtube";
 
 export default function Home() {
   const [latestVideoId, setLatestVideoId] = useState<string | null>(null);
   const [latestVideoTitle, setLatestVideoTitle] = useState<string | null>(null);
   const [subscriberCount, setSubscriberCount] = useState<string | null>(null);
+  
+  // 播放器狀態
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [played, setPlayed] = useState(0);
+  const playerRef = useRef<ReactPlayer>(null);
 
   useEffect(() => {
     const fetchYouTubeData = async () => {
@@ -24,7 +30,6 @@ export default function Home() {
         const videoData = await videoRes.json();
         if (videoData.items?.[0]) {
           setLatestVideoId(videoData.items[0].id.videoId);
-          // 移除標題中常見的括號後綴，保持簡潔
           setLatestVideoTitle(videoData.items[0].snippet.title.split(" (")[0]);
         }
 
@@ -217,9 +222,9 @@ export default function Home() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2 }}
-          className="mt-16 flex flex-col items-center gap-4"
+          className="mt-16 mb-32 flex flex-col items-center gap-4"
         >
-          {/* 頁尾 Logo */}
+          {/* ... 頁尾內容 ... */}
           <div className="relative w-12 h-12 opacity-40 hover:opacity-100 transition-opacity duration-500">
             <Image
               src="/logo.png"
@@ -242,6 +247,65 @@ export default function Home() {
           </p>
         </motion.div>
       </main>
+
+      {/* 隱藏的播放器引擎 */}
+      {latestVideoId && (
+        <div className="hidden">
+          <ReactPlayer
+            ref={playerRef}
+            url={`https://www.youtube.com/watch?v=${latestVideoId}`}
+            playing={isPlaying}
+            onProgress={(state) => setPlayed(state.played)}
+            config={{ youtube: { playerVars: { origin: window.location.origin } } }}
+          />
+        </div>
+      )}
+
+      {/* 懸浮音樂控制面板 */}
+      {latestVideoId && (
+        <motion.div
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          transition={{ delay: 1.5, type: "spring", stiffness: 100 }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[500px]"
+        >
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl p-4 shadow-2xl">
+            {/* 進度條 */}
+            <div className="absolute top-0 left-0 h-[2px] bg-yellow-500/50 transition-all duration-300" style={{ width: `${played * 100}%` }}></div>
+            
+            <div className="flex items-center justify-between gap-4">
+              {/* 歌曲資訊 */}
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-[#800000] to-black flex items-center justify-center border border-white/10 ${isPlaying ? 'animate-pulse' : ''}`}>
+                  <Music className="w-5 h-5 text-white/50" />
+                </div>
+                <div className="flex flex-col overflow-hidden text-left">
+                  <span className="text-[10px] text-yellow-500/70 font-bold uppercase tracking-tighter">Now Playing</span>
+                  <span className="text-white/90 text-xs font-light tracking-wide truncate max-w-[150px] sm:max-w-[200px]">
+                    {latestVideoTitle || "Loading..."}
+                  </span>
+                </div>
+              </div>
+
+              {/* 控制按鈕 */}
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
+                >
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                </button>
+                <div className="flex items-center gap-2 text-white/30 sm:flex hidden">
+                  <Volume2 className="w-4 h-4" />
+                  <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-white/40 w-2/3"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
