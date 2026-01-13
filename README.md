@@ -20,6 +20,39 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Gallery (高清照片下載) + Cloudflare R2 (推薦)
+
+本機照片放在 `public/galley/`（目前資料夾名稱就是 `galley`）。
+
+### 命名規則
+
+- 圖檔請用：`jiuliyue_001.png`、`jiuliyue_002.png`…（`jiuliyue_###.<ext>`）
+
+### 自動重新命名 + 上傳到 R2（只處理「不符合命名」的檔案）
+
+我們提供腳本：`scripts/gallery_r2_sync.sh`
+
+- 只重新命名（不會上傳）：
+
+```bash
+cd app
+./scripts/gallery_r2_sync.sh rename
+```
+
+- 重新命名 + 上傳（需要 aws CLI + R2 憑證）：
+
+```bash
+cd app
+export R2_ACCOUNT_ID="..."
+export R2_ACCESS_KEY_ID="..."
+export R2_SECRET_ACCESS_KEY="..."
+export R2_BUCKET="jiuliyue-gallery"
+export R2_PREFIX="galley/"
+./scripts/gallery_r2_sync.sh rename+upload
+```
+
+下載頁面 `/photos` 會優先使用 `NEXT_PUBLIC_GALLERY_BASE_URL`（設定為你的 `r2.dev` 網址），沒有設定時會讀本機 `public/galley`。
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

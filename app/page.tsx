@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart, Pause, Shuffle } from "lucide-react";
+import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart, Pause, Shuffle, Image as ImageIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 declare global {
@@ -320,6 +320,12 @@ export default function Home() {
 
   const links = [
     {
+      name: "高清照片下載",
+      url: "/photos",
+      icon: <ImageIcon className="w-5 h-5" />,
+      color: "from-[#8B5CF6] to-[#4C1D95]",
+    },
+    {
       name: "YouTube 頻道",
       url: "https://www.youtube.com/@Jiuliyue",
       icon: <Youtube className="w-5 h-5" />,
@@ -385,13 +391,13 @@ export default function Home() {
           className="relative mb-12 w-48 sm:w-64 md:w-80 h-auto"
         >
           <div className="relative">
-            <Image
+        <Image
               src="/logo_title.png"
               alt="九黎月"
               width={600}
               height={200}
               className="w-full h-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] pointer-events-none"
-              priority
+          priority
               draggable={false}
             />
             <div className="absolute inset-0 z-10 bg-transparent"></div>
@@ -485,7 +491,7 @@ export default function Home() {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                   </span>
                   <span className="text-[9px] text-red-500 font-black uppercase tracking-tighter">New Release</span>
-                </div>
+        </div>
               )}
             </motion.a>
 
@@ -493,8 +499,8 @@ export default function Home() {
             <motion.a
               key={link.name}
               href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 + index * 0.1 }}
