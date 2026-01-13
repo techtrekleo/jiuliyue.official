@@ -499,8 +499,8 @@ export default function Home() {
             <motion.a
               key={link.name}
               href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
+              target={link.url.startsWith("/") ? undefined : "_blank"}
+              rel={link.url.startsWith("/") ? undefined : "noopener noreferrer"}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 + index * 0.1 }}

@@ -20,7 +20,7 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Gallery (高清照片下載) + Cloudflare R2 (推薦)
+## Wallpapers (桌布下載) + Cloudflare R2 (推薦)
 
 本機照片放在 `public/galley/`（目前資料夾名稱就是 `galley`）。
 
