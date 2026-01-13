@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "site": {
+    "title": "九黎月 | Official Website",
+    "description": "九黎月官方網站 - 探索東方幻念音樂世界",
+    "bioLines": [
+      "有些夜晚，宛若一場將醒未醒的夢。",
+      "我是九黎月，陪你度過每個漫長且靜謐的夜。"
+    ]
+  },
+  "theme": {
+    "backgroundImage": "/bg_optimized.jpg",
+    "logoTitleImage": "/logo_title.png",
+    "footerLogoImage": "/logo.png"
+  },
+  "features": {
+    "enableWhispers": true,
+    "whispers": [
+      "今天的月色，好像在哪場夢裡見過。",
+      "聽說，旋律是靈魂在說話。",
+      "有些歌，只想在沒人的深夜唱給你聽。",
+      "如果你也在這，那就太好了。"
+    ],
+    "enableCheerButton": true,
+    "cheerLabel": "點亮星火",
+    "enableYouTubeLatest": true,
+    "enableYouTubePlayer": true,
+    "enableYouTubeShuffle": true
+  },
+  "youtube": {
+    "channelId": "UCZVT570EWJ64ibL-re9CFpQ",
+    "latestButtonLabel": "最新作品"
+  },
+  "links": [
+    {
+      "id": "youtube",
+      "enabled": true,
+      "label": "YouTube 頻道",
+      "url": "https://www.youtube.com/@Jiuliyue",
+      "icon": "Youtube",
+      "gradient": "from-[#FF0000] to-[#b30000]"
+    },
+    {
+      "id": "member",
+      "enabled": true,
+      "label": "挺九黎月 ‧ 每月 $25 守護計畫",
+      "url": "https://www.youtube.com/channel/UCZVT570EWJ64ibL-re9CFpQ/join",
+      "icon": "Crown",
+      "gradient": "from-[#8B0000] to-[#4a0000]",
+      "badge": "VIP",
+      "badgeLeft": "$25"
+    },
+    {
+      "id": "spotify",
+      "enabled": true,
+      "label": "Spotify",
+      "url": "https://open.spotify.com/artist/2Cc6ttn7VqpF6AFWBPKhca",
+      "icon": "Headphones",
+      "gradient": "from-[#1DB954] to-[#128c3d]"
+    },
+    {
+      "id": "apple",
+      "enabled": true,
+      "label": "Apple Music",
+      "url": "https://music.apple.com/us/artist/%E4%B9%9D%E9%BB%8E%E6%9C%88/1855064511",
+      "icon": "Music",
+      "gradient": "from-[#FA243C] to-[#b81b2c]"
+    },
+    {
+      "id": "threads",
+      "enabled": true,
+      "label": "Threads",
+      "url": "https://www.threads.net/@jiuliyue.official",
+      "icon": "AtSign",
+      "gradient": "from-[#000000] to-[#333333]"
+    },
+    {
+      "id": "wallpapers",
+      "enabled": true,
+      "label": "桌布下載",
+      "url": "/photos",
+      "icon": "Image",
+      "gradient": "from-[#8B5CF6] to-[#4C1D95]"
+    }
+  ],
+  "wallpapers": {
+    "enabled": true,
+    "title": "桌布下載",
+    "note": "使用提醒：僅供個人欣賞與分享，請勿商用。",
+    "localBase": "/galley",
+    "remoteBaseUrl": "",
+    "files": [
+      "jiuliyue_001.png",
+      "jiuliyue_002.png",
+      "jiuliyue_003.png",
+      "jiuliyue_004.png",
+      "jiuliyue_005.png",
+      "jiuliyue_006.png",
+      "jiuliyue_007.png",
+      "jiuliyue_008.png",
+      "jiuliyue_009.png",
+      "jiuliyue_010.png",
+      "jiuliyue_011.png"
+    ]
+  }
+}
+

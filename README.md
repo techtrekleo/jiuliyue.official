@@ -20,6 +20,74 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Template for Friends（零程式碼客製）
+
+你（或朋友）不需要會寫程式，只要照著做就能把它變成自己的「音樂人 Linktree 官網」。
+
+### 0) 下載模板
+
+最推薦用 GitHub：
+
+- **Fork**：每個人有自己一份 repo（最好用）
+- 或 **Use this template**：直接用模板建立新 repo
+- 或 **Download ZIP**（不打算用 git 的人）
+
+### 1) 本機啟動
+
+```bash
+cd app
+npm install
+npm run dev
+```
+
+開 `http://localhost:3000`
+
+### 2) 用 /admin 改站台（不用改程式）
+
+打開 `http://localhost:3000/admin`
+
+你可以在這裡：
+
+- 開關要不要顯示某些按鈕（YouTube/Spotify/Threads/桌布下載…）
+- 調整按鈕順序
+- 改文字、改連結、改 hover 顏色
+- 改背景圖、Logo 圖
+- 改「碎碎念」內容
+- 改 YouTube Channel ID
+- 改桌布下載（檔名清單、遠端 base URL）
+
+改完後按右上角 **「下載 site-config.json」**。
+
+### 3) 把設定檔放回 public/
+
+把你下載的 `site-config.json` 放回：
+
+- `app/public/site-config.json`（覆蓋原本那個）
+
+然後重新跑 `npm run dev` 就會看到新設定。
+
+### 4) 圖片放哪？
+
+所有圖片都放在 `app/public/`，然後在 `site-config.json` 內填路徑，例如：
+
+- 背景圖：`/bg_optimized.jpg`
+- 標題 Logo：`/logo_title.png`
+- 頁尾 Logo：`/logo.png`
+
+### 5) YouTube API 金鑰（顯示最新作品 / 訂閱數用）
+
+這個專案會讀環境變數：
+
+- `NEXT_PUBLIC_YOUTUBE_API_KEY`
+
+本機可以建 `app/.env.local`（**自己手動建立**）：
+
+```bash
+NEXT_PUBLIC_YOUTUBE_API_KEY=你的key
+```
+
+部署到 Railway 時也要在 Railway 的 Variables 裡新增同名變數。
+
 ## Wallpapers (桌布下載) + Cloudflare R2 (推薦)
 
 本機照片放在 `public/galley/`（目前資料夾名稱就是 `galley`）。
@@ -51,7 +119,7 @@ export R2_PREFIX="galley/"
 ./scripts/gallery_r2_sync.sh rename+upload
 ```
 
-下載頁面 `/photos` 會優先使用 `NEXT_PUBLIC_GALLERY_BASE_URL`（設定為你的 `r2.dev` 網址），沒有設定時會讀本機 `public/galley`。
+下載頁面 `/photos` 會優先使用 `public/site-config.json` 裡的 `wallpapers.remoteBaseUrl`（填你的 `r2.dev / pages.dev` 網址），沒有設定時會讀本機 `public/galley`（`wallpapers.localBase`）。
 
 ## Learn More
 

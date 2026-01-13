@@ -2,8 +2,21 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Youtube, Music, Headphones, AtSign, Crown, Play, Heart, Pause, Shuffle, Image as ImageIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Youtube,
+  Music,
+  Headphones,
+  AtSign,
+  Crown,
+  Play,
+  Heart,
+  Pause,
+  Shuffle,
+  Image as ImageIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { SiteConfig } from "./lib/siteConfig";
+import { fetchSiteConfig } from "./lib/siteConfig";
 
 declare global {
   interface Window {
@@ -13,6 +26,9 @@ declare global {
 }
 
 export default function Home() {
+  const [cfg, setCfg] = useState<SiteConfig | null>(null);
+  const [cfgError, setCfgError] = useState<string | null>(null);
+
   const [latestVideoId, setLatestVideoId] = useState<string | null>(null);
   const [latestVideoTitle, setLatestVideoTitle] = useState<string | null>(null);
   const [subscriberCount, setSubscriberCount] = useState<string | null>(null);
@@ -63,15 +79,32 @@ export default function Home() {
   const [currentWhisper, setCurrentWhisper] = useState("");
 
   useEffect(() => {
-    // 隨機選一句碎碎念
-    setCurrentWhisper(whispers[Math.floor(Math.random() * whispers.length)]);
-    
+    // Load site config (Linktree template config)
+    fetchSiteConfig()
+      .then((c) => setCfg(c))
+      .catch((e) => {
+        console.error("Failed to load site-config.json", e);
+        setCfgError("找不到 site-config.json，請確認 public/ 內有此檔案。");
+      });
+  }, []);
+
+  useEffect(() => {
+    // 隨機選一句碎碎念（可由設定檔覆蓋）
+    const list = cfg?.features?.enableWhispers
+      ? cfg.features.whispers?.filter(Boolean)
+      : [];
+    const pool = list.length ? list : whispers;
+    setCurrentWhisper(pool[Math.floor(Math.random() * pool.length)]);
+
     const fetchYouTubeData = async () => {
       try {
+        if (!cfg?.youtube?.channelId) return;
+        if (cfg.features?.enableYouTubeLatest === false && cfg.features?.enableYouTubePlayer === false) return;
+
         let chosenFromSearch: { id: string; title: string } | null = null;
 
         const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
-        const channelId = "UCZVT570EWJ64ibL-re9CFpQ";
+        const channelId = cfg.youtube.channelId;
         if (!apiKey || apiKey.includes("你的")) return;
 
         // 1. 抓取最新影片資訊
@@ -144,7 +177,7 @@ export default function Home() {
       }
     };
     fetchYouTubeData();
-  }, []);
+  }, [cfg]);
 
   // Load YouTube IFrame API once (no API key needed)
   useEffect(() => {
@@ -318,45 +351,58 @@ export default function Home() {
     }
   };
 
-  const links = [
-    {
-      name: "YouTube 頻道",
-      url: "https://www.youtube.com/@Jiuliyue",
-      icon: <Youtube className="w-5 h-5" />,
-      color: "from-[#FF0000] to-[#b30000]",
-    },
-    {
-      name: "挺九黎月 ‧ 每月 $25 守護計畫",
-      url: "https://www.youtube.com/channel/UCZVT570EWJ64ibL-re9CFpQ/join",
-      icon: <Crown className="w-5 h-5 text-yellow-400" />,
-      color: "from-[#8B0000] to-[#4a0000]",
-      special: true,
-      price: "$25",
-    },
-    {
-      name: "Spotify",
-      url: "https://open.spotify.com/artist/2Cc6ttn7VqpF6AFWBPKhca",
-      icon: <Headphones className="w-5 h-5" />,
-      color: "from-[#1DB954] to-[#128c3d]",
-    },
-    {
-      name: "Apple Music",
-      url: "https://music.apple.com/us/artist/%E4%B9%9D%E9%BB%8E%E6%9C%88/1855064511",
-      icon: <Music className="w-5 h-5" />,
-      color: "from-[#FA243C] to-[#b81b2c]",
-    },
-    {
-      name: "Threads",
-      url: "https://www.threads.net/@jiuliyue.official",
-      icon: <AtSign className="w-5 h-5" />,
-      color: "from-[#000000] to-[#333333]",
-    },
-    {
-      name: "桌布下載",
-      url: "/photos",
-      icon: <ImageIcon className="w-5 h-5" />,
-      color: "from-[#8B5CF6] to-[#4C1D95]",
-    },
+  type LinkUI = {
+    name: string;
+    url: string;
+    icon: ReactNode;
+    color: string;
+    special?: boolean;
+    price?: string;
+    badge?: string;
+  };
+
+  const links: LinkUI[] = [
+    // fallback (when config missing)
+    ...(cfg?.links?.length
+      ? cfg.links
+          .filter((x) => x.enabled)
+          .map((x) => {
+            const iconEl =
+              x.icon === "Youtube" ? (
+                <Youtube className="w-5 h-5" />
+              ) : x.icon === "Crown" ? (
+                <Crown className="w-5 h-5 text-yellow-400" />
+              ) : x.icon === "Headphones" ? (
+                <Headphones className="w-5 h-5" />
+              ) : x.icon === "Music" ? (
+                <Music className="w-5 h-5" />
+              ) : x.icon === "AtSign" ? (
+                <AtSign className="w-5 h-5" />
+              ) : (
+                <ImageIcon className="w-5 h-5" />
+              );
+
+            return {
+              name: x.label,
+              url: x.url,
+              icon: iconEl,
+              color: x.gradient,
+              special: !!x.badge,
+              price: x.badgeLeft,
+              badge: x.badge,
+            };
+          })
+      : [
+          {
+            name: "YouTube 頻道",
+            url: "https://www.youtube.com/@Jiuliyue",
+            icon: <Youtube className="w-5 h-5" />,
+            color: "from-[#FF0000] to-[#b30000]",
+            special: false,
+            price: undefined,
+            badge: undefined,
+          },
+        ]),
   ];
 
   return (
@@ -368,7 +414,7 @@ export default function Home() {
       <div className="fixed inset-0 z-0">
         <div className="relative w-full h-full">
           <Image
-            src="/bg_optimized.jpg"
+            src={cfg?.theme?.backgroundImage ?? "/bg_optimized.jpg"}
             alt="背景"
             fill
             className="object-cover pointer-events-none"
@@ -392,7 +438,7 @@ export default function Home() {
         >
           <div className="relative">
         <Image
-              src="/logo_title.png"
+              src={cfg?.theme?.logoTitleImage ?? "/logo_title.png"}
               alt="九黎月"
               width={600}
               height={200}
@@ -411,16 +457,32 @@ export default function Home() {
           transition={{ duration: 1.2, delay: 1 }}
           className="mb-12 text-center flex flex-col gap-2 relative"
         >
-          <p className="text-white/60 text-sm md:text-[15px] font-light tracking-[0.25em] leading-loose">
-            有些夜晚，宛若一場將醒未醒的夢。
-          </p>
-          <p className="text-white/80 text-[15px] md:text-16px font-normal tracking-[0.3em] mt-1">
-            我是 <span className="text-white">九黎月</span>，陪你度過每個漫長且靜謐的夜。
-          </p>
+          {(cfg?.site?.bioLines?.length ? cfg.site.bioLines : ["有些夜晚，宛若一場將醒未醒的夢。", "我是 九黎月，陪你度過每個漫長且靜謐的夜。"]).map(
+            (line, i) => (
+              <p
+                key={i}
+                className={
+                  i === 0
+                    ? "text-white/60 text-sm md:text-[15px] font-light tracking-[0.25em] leading-loose"
+                    : "text-white/80 text-[15px] md:text-16px font-normal tracking-[0.3em] mt-1"
+                }
+              >
+                {line.includes("九黎月") ? (
+                  <>
+                    {line.split("九黎月")[0]}
+                    <span className="text-white">九黎月</span>
+                    {line.split("九黎月")[1] ?? ""}
+                  </>
+                ) : (
+                  line
+                )}
+              </p>
+            )
+          )}
 
           {/* 深夜呢喃 & 加油按鈕 */}
           <div className="mt-8 flex flex-col items-center gap-4">
-            {currentWhisper && (
+            {cfg?.features?.enableWhispers !== false && currentWhisper && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -432,34 +494,46 @@ export default function Home() {
               </motion.div>
             )}
             
-            <button
-              onClick={addHeart}
-              className="group relative p-3 rounded-full bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all duration-300"
-            >
-              <Heart className="w-5 h-5 text-red-400 group-hover:fill-red-400 transition-all" />
-              
-              {/* 噴發的愛心動畫 */}
-              {hearts.map((heart) => (
-                <motion.div
-                  key={heart.id}
-                  initial={{ opacity: 1, y: 0, scale: 1 }}
-                  animate={{ opacity: 0, y: -100, x: heart.x, scale: 0.5 }}
-                  transition={{ duration: 2, ease: "easeOut" }}
-                  className="absolute pointer-events-none text-red-400"
-                  style={{ left: "50%", top: "50%" }}
+            {cfg?.features?.enableCheerButton !== false && (
+              <>
+                <button
+                  onClick={addHeart}
+                  className="group relative p-3 rounded-full bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all duration-300"
                 >
-                  <Heart className="w-4 h-4 fill-current" />
-                </motion.div>
-              ))}
-            </button>
-            <span className="text-white/20 text-[10px] tracking-tighter uppercase font-bold">點亮星火</span>
+                  <Heart className="w-5 h-5 text-red-400 group-hover:fill-red-400 transition-all" />
+
+                  {/* 噴發的愛心動畫 */}
+                  {hearts.map((heart) => (
+                    <motion.div
+                      key={heart.id}
+                      initial={{ opacity: 1, y: 0, scale: 1 }}
+                      animate={{ opacity: 0, y: -100, x: heart.x, scale: 0.5 }}
+                      transition={{ duration: 2, ease: "easeOut" }}
+                      className="absolute pointer-events-none text-red-400"
+                      style={{ left: "50%", top: "50%" }}
+                    >
+                      <Heart className="w-4 h-4 fill-current" />
+                    </motion.div>
+                  ))}
+                </button>
+                <span className="text-white/20 text-[10px] tracking-tighter uppercase font-bold">
+                  {cfg?.features?.cheerLabel ?? "點亮星火"}
+                </span>
+              </>
+            )}
           </div>
         </motion.div>
 
         {/* 連結列表 */}
         <div className="flex flex-col gap-5 w-full max-w-[340px] sm:max-w-[420px]">
+          {cfgError && (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-[12px] text-red-200/80 tracking-wide">
+              {cfgError}
+            </div>
+          )}
           {/* 最新作品：就算抓不到 API，也先顯示（fallback 連到頻道） */}
-          <motion.a
+          {cfg?.features?.enableYouTubeLatest !== false && (
+            <motion.a
               href={
                 latestVideoId
                   ? `https://www.youtube.com/watch?v=${latestVideoId}`
@@ -477,7 +551,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <Play className="w-5 h-5 text-yellow-400 fill-yellow-400 animate-pulse" />
                   <span className="text-yellow-400 font-bold tracking-[0.2em] text-[15px]">
-                    最新作品
+                    {cfg?.youtube?.latestButtonLabel ?? "最新作品"}
                   </span>
                 </div>
                 <span className="text-yellow-200/60 text-[10px] sm:text-[11px] tracking-widest font-light mt-1 text-center max-w-[300px] sm:max-w-[350px] leading-relaxed">
@@ -494,6 +568,7 @@ export default function Home() {
         </div>
               )}
             </motion.a>
+          )}
 
           {links.map((link, index) => (
             <motion.a
@@ -524,7 +599,7 @@ export default function Home() {
               {link.special && (
                 <div className="absolute top-0 right-0 px-3 py-1 bg-yellow-500/10 backdrop-blur-sm text-[9px] text-yellow-200/50 font-bold tracking-widest border-b border-l border-yellow-500/20 rounded-bl-xl group-hover:bg-yellow-400 group-hover:text-black group-hover:opacity-100 transition-all duration-500">
                   {link.price && <span className="mr-2 opacity-50 group-hover:opacity-100">{link.price}</span>}
-                  VIP
+                  {link.badge ?? "VIP"}
                 </div>
               )}
             </motion.a>
@@ -540,7 +615,7 @@ export default function Home() {
         >
           <div className="relative w-12 h-12 opacity-40 hover:opacity-100 transition-opacity duration-500">
             <Image
-              src="/logo.png"
+              src={cfg?.theme?.footerLogoImage ?? "/logo.png"}
               alt="Official Logo"
               width={48}
               height={48}
@@ -565,8 +640,8 @@ export default function Home() {
         <div id={ytMountId} />
       </div>
 
-      {/* Mini player bar (local test) */}
-      {(currentVideoId ?? latestVideoId) && (
+      {/* Mini player bar */}
+      {cfg?.features?.enableYouTubePlayer !== false && (currentVideoId ?? latestVideoId) && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[340px] sm:max-w-[420px]">
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl px-4 py-3 shadow-2xl">
             <div
@@ -598,14 +673,16 @@ export default function Home() {
               </div>
 
               <div className="shrink-0 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={shufflePlay}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/80 transition-all active:scale-95"
-                  title="隨機播放"
-                >
-                  <Shuffle className="w-4 h-4" />
-                </button>
+                {cfg?.features?.enableYouTubeShuffle !== false && (
+                  <button
+                    type="button"
+                    onClick={shufflePlay}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/80 transition-all active:scale-95"
+                    title="隨機播放"
+                  >
+                    <Shuffle className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={toggleYt}

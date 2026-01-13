@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { Download } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { SiteConfig } from "../lib/siteConfig";
+import { fetchSiteConfig } from "../lib/siteConfig";
 
 type Photo = {
   id: string;
@@ -10,38 +12,37 @@ type Photo = {
   title?: string;
 };
 
-// 本機目前的照片來源（你放在 public/galley）
-const LOCAL_BASE = "/galley";
-
-// 之後換成 R2 時，把這個改成你的 r2.dev / pages.dev base URL
-// 例如：https://<你的-bucket>.<你的-accountid>.r2.dev
-const REMOTE_BASE = process.env.NEXT_PUBLIC_GALLERY_BASE_URL;
-
-const PHOTOS: Photo[] = [
-  { id: "p1", filename: "jiuliyue_001.png" },
-  { id: "p2", filename: "jiuliyue_002.png" },
-  { id: "p3", filename: "jiuliyue_003.png" },
-  { id: "p4", filename: "jiuliyue_004.png" },
-  { id: "p5", filename: "jiuliyue_005.png" },
-  { id: "p6", filename: "jiuliyue_006.png" },
-  { id: "p7", filename: "jiuliyue_007.png" },
-  { id: "p8", filename: "jiuliyue_008.png" },
-  { id: "p9", filename: "jiuliyue_009.png" },
-  { id: "p10", filename: "jiuliyue_010.png" },
-  { id: "p11", filename: "jiuliyue_011.png" },
-];
-
 function join(base: string, filename: string) {
   return `${base.replace(/\/$/, "")}/${encodeURIComponent(filename)}`;
 }
 
 export default function PhotosPage() {
+  const [cfg, setCfg] = useState<SiteConfig | null>(null);
+  const [cfgError, setCfgError] = useState<string | null>(null);
   const [active, setActive] = useState<Photo | null>(null);
 
-  const base = useMemo(() => {
-    // 有設定遠端就用遠端，沒有就用本機 public/galley
-    return REMOTE_BASE?.trim() ? REMOTE_BASE.trim() : LOCAL_BASE;
+  useEffect(() => {
+    fetchSiteConfig()
+      .then((c) => setCfg(c))
+      .catch((e) => {
+        console.error("Failed to load site-config.json", e);
+        setCfgError("找不到 site-config.json，請確認 public/ 內有此檔案。");
+      });
   }, []);
+
+  const enabled = cfg?.wallpapers?.enabled !== false;
+  const title = cfg?.wallpapers?.title ?? "桌布下載";
+  const note = cfg?.wallpapers?.note ?? "使用提醒：僅供個人欣賞與分享，請勿商用。";
+  const base = useMemo(() => {
+    const remote = cfg?.wallpapers?.remoteBaseUrl?.trim();
+    if (remote) return remote;
+    return cfg?.wallpapers?.localBase?.trim() || "/galley";
+  }, [cfg]);
+
+  const photos: Photo[] = useMemo(() => {
+    const files = cfg?.wallpapers?.files?.filter(Boolean) ?? [];
+    return files.map((filename, idx) => ({ id: `p${idx + 1}`, filename }));
+  }, [cfg]);
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-14">
@@ -49,19 +50,33 @@ export default function PhotosPage() {
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
-              桌布下載
+              {title}
             </h1>
             <p className="mt-2 text-white/50 text-sm tracking-wider">
               先在官網瀏覽，點「下載」拿檔案。之後接 R2 也不需要改頁面。
             </p>
             <p className="mt-2 text-white/35 text-xs tracking-widest">
-              使用提醒：僅供個人欣賞與分享，<span className="text-white/55">請勿商用</span>。
+              {note.replace("請勿商用", "")}
+              <span className="text-white/55">請勿商用</span>。
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {PHOTOS.map((p) => {
+        {cfgError && (
+          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-[12px] text-red-200/80 tracking-wide">
+            {cfgError}
+          </div>
+        )}
+
+        {!enabled && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-center text-white/60 text-sm tracking-wide">
+            這個模板目前把「桌布下載」關閉了（可在 /admin 重新開啟）。
+          </div>
+        )}
+
+        {enabled && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {photos.map((p) => {
             const src = join(base, p.filename);
             return (
               <button
@@ -84,8 +99,9 @@ export default function PhotosPage() {
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/35" />
               </button>
             );
-          })}
-        </div>
+            })}
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}
