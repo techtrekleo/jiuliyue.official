@@ -49,10 +49,10 @@ export default function PhotosPage() {
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
-              高清照片下載
+              桌布下載
             </h1>
             <p className="mt-2 text-white/50 text-sm tracking-wider">
-              先在官網瀏覽，點「下載」拿原圖。之後接 R2 也不需要改頁面。
+              先在官網瀏覽，點「下載」拿檔案。之後接 R2 也不需要改頁面。
             </p>
             <p className="mt-2 text-white/35 text-xs tracking-widest">
               使用提醒：僅供個人欣賞與分享，<span className="text-white/55">請勿商用</span>。

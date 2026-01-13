@@ -320,12 +320,6 @@ export default function Home() {
 
   const links = [
     {
-      name: "高清照片下載",
-      url: "/photos",
-      icon: <ImageIcon className="w-5 h-5" />,
-      color: "from-[#8B5CF6] to-[#4C1D95]",
-    },
-    {
       name: "YouTube 頻道",
       url: "https://www.youtube.com/@Jiuliyue",
       icon: <Youtube className="w-5 h-5" />,
@@ -356,6 +350,12 @@ export default function Home() {
       url: "https://www.threads.net/@jiuliyue.official",
       icon: <AtSign className="w-5 h-5" />,
       color: "from-[#000000] to-[#333333]",
+    },
+    {
+      name: "桌布下載",
+      url: "/photos",
+      icon: <ImageIcon className="w-5 h-5" />,
+      color: "from-[#8B5CF6] to-[#4C1D95]",
     },
   ];
 
