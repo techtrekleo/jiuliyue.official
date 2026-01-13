@@ -46,6 +46,9 @@ npm run dev
 
 打開 `http://localhost:3000/admin`
 
+> 注意：`/admin` **只在本機開發環境可用**（`npm run dev`）。  
+> 你把網站部署上線後，`/admin` 會直接 **404**，外人看不到、也不能使用。
+
 你可以在這裡：
 
 - 開關要不要顯示某些按鈕（YouTube/Spotify/Threads/桌布下載…）
