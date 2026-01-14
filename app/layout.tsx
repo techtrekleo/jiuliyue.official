@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.jiuliyue.com";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -20,11 +22,11 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: "九黎月 | Official Website",
   description: "九黎月官方網站 - 探索東方幻念音樂世界",
-  metadataBase: new URL("https://jiuliyue.zeabur.app"),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     title: "九黎月 | Official Website",
     description: "探索東方幻念音樂世界",
-    url: "https://jiuliyue.zeabur.app",
+    url: SITE_URL,
     siteName: "九黎月",
     images: [
       {
