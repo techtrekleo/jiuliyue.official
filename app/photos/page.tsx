@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Download } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Download } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { SiteConfig } from "../lib/siteConfig";
 import { fetchSiteConfig } from "../lib/siteConfig";
@@ -52,14 +53,18 @@ export default function PhotosPage() {
             <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
               {title}
             </h1>
-            <p className="mt-2 text-white/50 text-sm tracking-wider">
-              先在官網瀏覽，點「下載」拿檔案。之後接 R2 也不需要改頁面。
-            </p>
-            <p className="mt-2 text-white/35 text-xs tracking-widest">
-              {note.replace("請勿商用", "")}
-              <span className="text-white/55">請勿商用</span>。
+            <p className="mt-3 text-white/55 text-[13px] sm:text-sm tracking-wider leading-relaxed">
+              {note}
             </p>
           </div>
+
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[13px] sm:text-sm text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            回到首頁
+          </Link>
         </div>
 
         {cfgError && (
