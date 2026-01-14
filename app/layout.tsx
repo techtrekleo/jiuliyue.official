@@ -68,8 +68,9 @@ export default async function RootLayout({
         url: SITE_URL,
       },
       {
-        "@type": "MusicGroup",
+        "@type": "Person",
         name: "九黎月",
+        alternateName: "Jiuliyue",
         url: SITE_URL,
         description: cfg?.site?.description ?? "九黎月官方網站 - 探索東方幻念音樂世界",
         image: cfg?.theme?.footerLogoImage ? `${SITE_URL}${cfg.theme.footerLogoImage}` : undefined,
