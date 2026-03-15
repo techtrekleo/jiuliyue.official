@@ -1,23 +1,33 @@
-# 使用 Debian bookworm-slim 作為基礎映像 (解決 Alpine/musl 與 lightningcss 的相容性問題)
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim AS base
 
-# 設定工作目錄
+# Install dependencies only when needed
+FROM base AS deps
 WORKDIR /app
-
-# 複製 package.json 和 lockfile
 COPY package.json package-lock.json ./
-
-# 安裝所有相依套件 (使用 npm)
 RUN npm ci
 
-# 複製所有專案檔案
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# 進行 Next.js 建置
 RUN npm run build
 
-# 暴露對外埠號
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV PORT 8080
+ENV HOSTNAME "0.0.0.0"
+
+COPY --from=builder /app/public ./public
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
 EXPOSE 8080
 
-# 啟動伺服器 (綁定 0.0.0.0 以供 Zeabur 路由)
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

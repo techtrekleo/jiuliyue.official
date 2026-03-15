@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* 使用標準部署模式 */
+  output: 'standalone',
   images: {
     unoptimized: true,
   },
