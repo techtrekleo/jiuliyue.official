@@ -212,7 +212,7 @@ export default function AdminClient() {
           <h2 className="text-sm font-semibold tracking-widest text-white/80">功能開關</h2>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              ["enableWhispers", "碎碎念（whispers）"],
+              ["enableWhispers", "夜裡一句（whispers）"],
               ["enableCheerButton", "加油按鈕（點亮星火）"],
               ["enableYouTubeLatest", "顯示「最新作品」按鈕"],
               ["enableYouTubePlayer", "顯示底部播放器"],
@@ -247,7 +247,7 @@ export default function AdminClient() {
               />
             </label>
             <label className="md:col-span-2 flex flex-col gap-2">
-              <span className="text-xs text-white/50 tracking-widest">碎碎念（每行一句）</span>
+              <span className="text-xs text-white/50 tracking-widest">夜裡一句（每行一句）</span>
               <textarea
                 value={cfg.features.whispers.join("\n")}
                 onChange={(e) =>

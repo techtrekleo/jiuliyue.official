@@ -13,6 +13,7 @@ import {
   Pause,
   Shuffle,
   Image as ImageIcon,
+  RotateCcw,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { SiteConfig } from "./lib/siteConfig";
@@ -88,13 +89,35 @@ export default function Home() {
       });
   }, []);
 
+  const whisperPool = useMemo(() => {
+    if (cfg?.features?.enableWhispers === false) return [];
+    const list = cfg?.features?.whispers?.filter(Boolean) ?? [];
+    return list.length ? list : whispers;
+  }, [cfg]);
+
+  const pickNextWhisper = () => {
+    if (!whisperPool.length) return;
+    if (whisperPool.length === 1) {
+      setCurrentWhisper(whisperPool[0]);
+      return;
+    }
+    // avoid repeating the same line if possible
+    let next = whisperPool[Math.floor(Math.random() * whisperPool.length)];
+    if (next === currentWhisper) {
+      const idx = whisperPool.indexOf(currentWhisper);
+      const alt = whisperPool[(idx + 1) % whisperPool.length];
+      next = alt || next;
+    }
+    setCurrentWhisper(next);
+  };
+
   useEffect(() => {
     // 隨機選一句碎碎念（可由設定檔覆蓋）
-    const list = cfg?.features?.enableWhispers
-      ? cfg.features.whispers?.filter(Boolean)
-      : [];
-    const pool = list.length ? list : whispers;
-    setCurrentWhisper(pool[Math.floor(Math.random() * pool.length)]);
+    if (whisperPool.length) {
+      setCurrentWhisper(whisperPool[Math.floor(Math.random() * whisperPool.length)]);
+    } else {
+      setCurrentWhisper("");
+    }
 
     const fetchYouTubeData = async () => {
       try {
@@ -177,7 +200,7 @@ export default function Home() {
       }
     };
     fetchYouTubeData();
-  }, [cfg]);
+  }, [cfg, whisperPool]);
 
   // Load YouTube IFrame API once (no API key needed)
   useEffect(() => {
@@ -486,11 +509,27 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/5 backdrop-blur-sm"
+                className="w-full max-w-[340px] sm:max-w-[420px] rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-4"
               >
-                <p className="text-white/40 text-[11px] italic tracking-widest">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-white/45 text-[10px] tracking-[0.35em] uppercase font-semibold">
+                    夜裡一句
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={pickNextWhisper}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-black/20 hover:bg-black/35 text-white/70 hover:text-white transition-colors"
+                      title="換一句"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-3 text-white/70 text-[13px] sm:text-sm italic tracking-widest leading-relaxed">
                   「 {currentWhisper} 」
-                </p>
+                </div>
               </motion.div>
             )}
             
