@@ -128,12 +128,23 @@ export default function Home() {
 
         const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
         const channelId = cfg.youtube.channelId;
-        if (!apiKey || apiKey.includes("你的")) return;
+        if (!apiKey || apiKey.includes("你的")) {
+          console.warn("未設定有效的 YouTube API Key，無法抓取最新作品。");
+          setLatestVideoTitle("預設最新作品");
+          return;
+        }
 
         // 1. 抓取最新影片資訊
         const videoRes = await fetch(
           `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet,id&order=date&maxResults=1&type=video`
         );
+        
+        if (!videoRes.ok) {
+           console.warn("YouTube API 請求失敗 (可能是 API Key 錯誤或超過配額):", videoRes.status);
+           setLatestVideoTitle("觀看最新作品");
+           return;
+        }
+
         const videoData = await videoRes.json();
         if (videoData.items?.[0]) {
           const vid = videoData.items[0].id.videoId as string;
@@ -150,53 +161,64 @@ export default function Home() {
         const channelRes = await fetch(
           `https://www.googleapis.com/youtube/v3/channels?key=${apiKey}&id=${channelId}&part=statistics`
         );
-        const channelData = await channelRes.json();
-        if (channelData.items?.[0]) {
-          const count = parseInt(channelData.items[0].statistics.subscriberCount);
-          setSubscriberCount(count >= 1000 ? (count / 1000).toFixed(1) + "K" : count.toString());
+        if (channelRes.ok) {
+          const channelData = await channelRes.json();
+          if (channelData.items?.[0]) {
+            const count = parseInt(channelData.items[0].statistics.subscriberCount);
+            setSubscriberCount(count >= 1000 ? (count / 1000).toFixed(1) + "K" : count.toString());
+          }
         }
 
         // 3. 抓取頻道 uploads playlist，取得最近作品池（用於隨機播放）
         const uploadsRes = await fetch(
           `https://www.googleapis.com/youtube/v3/channels?key=${apiKey}&id=${channelId}&part=contentDetails`
         );
-        const uploadsData = await uploadsRes.json();
-        const uploadsPlaylistId =
-          uploadsData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+        
+        if (uploadsRes.ok) {
+          const uploadsData = await uploadsRes.json();
+          const uploadsPlaylistId =
+            uploadsData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
 
-        if (uploadsPlaylistId) {
-          const listRes = await fetch(
-            `https://www.googleapis.com/youtube/v3/playlistItems?key=${apiKey}&playlistId=${uploadsPlaylistId}&part=snippet,contentDetails&maxResults=25`
-          );
-          const listData = await listRes.json();
-          const pool: Array<{ id: string; title: string }> =
-            listData.items
-              ?.map((it: any) => ({
-                id: it?.contentDetails?.videoId as string | undefined,
-                title: (it?.snippet?.title as string | undefined)?.split(" (")[0] ?? "未命名",
-              }))
-              .filter((x: any) => !!x.id) ?? [];
+          if (uploadsPlaylistId) {
+            const listRes = await fetch(
+              `https://www.googleapis.com/youtube/v3/playlistItems?key=${apiKey}&playlistId=${uploadsPlaylistId}&part=snippet,contentDetails&maxResults=25`
+            );
+            
+            if (listRes.ok) {
+              const listData = await listRes.json();
+              const pool: Array<{ id: string; title: string }> =
+                listData.items
+                  ?.map((it: any) => ({
+                    id: it?.contentDetails?.videoId as string | undefined,
+                    title: (it?.snippet?.title as string | undefined)?.split(" (")[0] ?? "未命名",
+                  }))
+                  .filter((x: any) => !!x.id) ?? [];
 
-          // 依照 id 去重並保留第一個出現的 title
-          const seen = new Set<string>();
-          const uniq: Array<{ id: string; title: string }> = [];
-          for (const item of pool) {
-            if (seen.has(item.id)) continue;
-            seen.add(item.id);
-            uniq.push(item);
-          }
-          setVideoPool(uniq);
+              // 依照 id 去重並保留第一個出現的 title
+              const seen = new Set<string>();
+              const uniq: Array<{ id: string; title: string }> = [];
+              for (const item of pool) {
+                if (seen.has(item.id)) continue;
+                seen.add(item.id);
+                uniq.push(item);
+              }
+              setVideoPool(uniq);
 
-          // 如果 search 沒抓到（或被限制/快取影響），就用 uploads 清單的第一首當作「最新作品」
-          if (!chosenFromSearch && uniq[0]) {
-            setLatestVideoId(uniq[0].id);
-            setLatestVideoTitle(uniq[0].title);
-            setCurrentVideoId((prev) => prev ?? uniq[0].id);
-            setCurrentVideoTitle((prev) => prev ?? uniq[0].title);
+              // 如果 search 沒抓到（或被限制/快取影響），就用 uploads 清單的第一首當作「最新作品」
+              if (!chosenFromSearch && uniq[0]) {
+                setLatestVideoId(uniq[0].id);
+                setLatestVideoTitle(uniq[0].title);
+                setCurrentVideoId((prev) => prev ?? uniq[0].id);
+                setCurrentVideoTitle((prev) => prev ?? uniq[0].title);
+              }
+            }
           }
         }
       } catch (e) {
         console.error("YouTube API Error", e);
+        if (!latestVideoTitle) {
+           setLatestVideoTitle("觀看最新作品");
+        }
       }
     };
     fetchYouTubeData();
