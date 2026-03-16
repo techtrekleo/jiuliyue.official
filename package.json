@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "start": "PORT=8080 HOSTNAME=0.0.0.0 node .next/standalone/server.js",
+    "start": "next start -p 8080 -H 0.0.0.0",
     "lint": "eslint"
   },
   "dependencies": {

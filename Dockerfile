@@ -21,13 +21,9 @@ ENV NODE_ENV production
 ENV PORT 8080
 ENV HOSTNAME "0.0.0.0"
 
-COPY --from=builder /app/public ./public
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Copy everything from builder (Next.js default build is already optimized enough for this app)
+COPY --from=builder /app ./
 
 EXPOSE 8080
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
