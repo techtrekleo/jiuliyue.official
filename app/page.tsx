@@ -19,6 +19,16 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { SiteConfig } from "./lib/siteConfig";
 import { fetchSiteConfig } from "./lib/siteConfig";
 
+// Decode HTML entities returned by YouTube API (e.g. &amp; → &)
+const decodeHtmlEntities = (str: string): string => {
+  if (typeof document === "undefined") {
+    return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  }
+  const txt = document.createElement("textarea");
+  txt.innerHTML = str;
+  return txt.value;
+};
+
 declare global {
   interface Window {
     YT?: any;
@@ -148,7 +158,7 @@ export default function Home() {
         const videoData = await videoRes.json();
         if (videoData.items?.[0]) {
           const vid = videoData.items[0].id.videoId as string;
-          const title = (videoData.items[0].snippet.title as string).split(" (")[0];
+          const title = decodeHtmlEntities((videoData.items[0].snippet.title as string).split(" (")[0]);
           setLatestVideoId(vid);
           setLatestVideoTitle(title);
           // 初始化播放器當前播放曲目為最新作品（若尚未設定）
@@ -190,7 +200,7 @@ export default function Home() {
                 listData.items
                   ?.map((it: any) => ({
                     id: it?.contentDetails?.videoId as string | undefined,
-                    title: (it?.snippet?.title as string | undefined)?.split(" (")[0] ?? "未命名",
+                    title: decodeHtmlEntities((it?.snippet?.title as string | undefined)?.split(" (")[0] ?? "未命名"),
                   }))
                   .filter((x: any) => !!x.id) ?? [];
 
