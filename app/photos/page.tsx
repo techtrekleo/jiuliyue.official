@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Monitor, Smartphone } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { SiteConfig } from "../lib/siteConfig";
 import { fetchSiteConfig } from "../lib/siteConfig";
@@ -21,6 +21,7 @@ export default function PhotosPage() {
   const [cfg, setCfg] = useState<SiteConfig | null>(null);
   const [cfgError, setCfgError] = useState<string | null>(null);
   const [active, setActive] = useState<Photo | null>(null);
+  const [tab, setTab] = useState<"landscape" | "portrait">("landscape");
 
   useEffect(() => {
     fetchSiteConfig()
@@ -40,14 +41,23 @@ export default function PhotosPage() {
     return cfg?.wallpapers?.localBase?.trim() || "/galley";
   }, [cfg]);
 
-  const photos: Photo[] = useMemo(() => {
+  const landscapePhotos: Photo[] = useMemo(() => {
     const files = cfg?.wallpapers?.files?.filter(Boolean) ?? [];
-    return files.map((filename, idx) => ({ id: `p${idx + 1}`, filename }));
+    return files.map((filename, idx) => ({ id: `l${idx + 1}`, filename }));
   }, [cfg]);
+
+  const portraitPhotos: Photo[] = useMemo(() => {
+    const files = (cfg?.wallpapers as any)?.portraitFiles?.filter(Boolean) ?? [];
+    return files.map((filename: string, idx: number) => ({ id: `p${idx + 1}`, filename }));
+  }, [cfg]);
+
+  const currentPhotos = tab === "landscape" ? landscapePhotos : portraitPhotos;
+  const hasPortrait = portraitPhotos.length > 0;
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-14">
       <div className="mx-auto w-full max-w-5xl">
+        {/* Header */}
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
@@ -67,6 +77,40 @@ export default function PhotosPage() {
           </Link>
         </div>
 
+        {/* Tabs */}
+        <div className="mb-6 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTab("landscape")}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-wide transition-all ${
+              tab === "landscape"
+                ? "bg-white text-black"
+                : "border border-white/15 bg-white/5 text-white/60 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <Monitor className="w-4 h-4" />
+            橫式桌布
+            <span className={`text-xs ${tab === "landscape" ? "text-black/50" : "text-white/30"}`}>
+              {landscapePhotos.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("portrait")}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium tracking-wide transition-all ${
+              tab === "portrait"
+                ? "bg-white text-black"
+                : "border border-white/15 bg-white/5 text-white/60 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+            直式桌布
+            <span className={`text-xs ${tab === "portrait" ? "text-black/50" : "text-white/30"}`}>
+              {portraitPhotos.length}
+            </span>
+          </button>
+        </div>
+
         {cfgError && (
           <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-[12px] text-red-200/80 tracking-wide">
             {cfgError}
@@ -79,31 +123,42 @@ export default function PhotosPage() {
           </div>
         )}
 
-        {enabled && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {photos.map((p) => {
-            const src = join(base, p.filename);
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setActive(p)}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
-                title="點擊預覽"
-              >
-                <div className="relative aspect-[4/5]">
-                  <Image
-                    src={src}
-                    alt={p.title ?? "photo"}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    unoptimized
-                  />
-                </div>
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/35" />
-              </button>
-            );
+        {enabled && currentPhotos.length === 0 && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-12 text-center">
+            <Smartphone className="w-10 h-10 text-white/20 mx-auto mb-3" />
+            <p className="text-white/40 text-sm tracking-wider">直式桌布即將推出，敬請期待 🦊</p>
+          </div>
+        )}
+
+        {enabled && currentPhotos.length > 0 && (
+          <div className={`grid gap-4 ${
+            tab === "portrait"
+              ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+              : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+          }`}>
+            {currentPhotos.map((p) => {
+              const src = join(base, p.filename);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setActive(p)}
+                  className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                  title="點擊預覽"
+                >
+                  <div className={`relative ${tab === "portrait" ? "aspect-[9/16]" : "aspect-[16/9]"}`}>
+                    <Image
+                      src={src}
+                      alt={p.title ?? "photo"}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/35" />
+                </button>
+              );
             })}
           </div>
         )}
@@ -140,7 +195,7 @@ export default function PhotosPage() {
                   </a>
                 </div>
               </div>
-              <div className="relative w-full aspect-[16/10] bg-black">
+              <div className={`relative w-full bg-black ${tab === "portrait" ? "aspect-[9/16] max-h-[80vh]" : "aspect-[16/10]"}`}>
                 <Image
                   src={join(base, active.filename)}
                   alt={active.title ?? "photo"}
@@ -156,4 +211,3 @@ export default function PhotosPage() {
     </div>
   );
 }
-
