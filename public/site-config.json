@@ -9,7 +9,7 @@
     ]
   },
   "theme": {
-    "backgroundImage": "/bg_optimized.jpg",
+    "backgroundImage": "/bg.jpg",
     "logoTitleImage": "/logo_title.png",
     "footerLogoImage": "/logo.png"
   },
